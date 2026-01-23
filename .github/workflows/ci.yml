@@ -38,6 +38,10 @@ jobs:
         working-directory: ./client
         run: npm run build
 
+      - name: Env
+        run: printenv
+        
+
   server:
     name: Server (Node.js/Express)
     runs-on: ubuntu-latest
