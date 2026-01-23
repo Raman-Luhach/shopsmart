@@ -40,6 +40,7 @@ jobs:
 
       - name: Env
         run: printenv
+              echo "{{ $github.sha }}"
         
 
   server:
