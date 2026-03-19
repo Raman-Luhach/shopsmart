@@ -38,6 +38,11 @@ jobs:
         working-directory: ./client
         run: npm run build
 
+      - name: Env
+        run: printenv
+             | echo "{{ $github.sha }}"
+        
+
   server:
     name: Server (Node.js/Express)
     runs-on: ubuntu-latest
