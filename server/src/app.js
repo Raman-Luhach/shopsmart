@@ -14,7 +14,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     message: 'ShopSmart Backend is running (MongoDB enabled)',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 

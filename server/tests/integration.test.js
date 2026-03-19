@@ -30,22 +30,22 @@ describe('API + DB Integration Tests', () => {
   it('should fetch data from DB through the API successfully', async () => {
     // 1. Direct DB Interaction (Simulating Database state)
     await Category.create({ id: 10, name: 'Integration Tools', icon: '⚙️' });
-    await Product.create({ 
-      id: 999, 
-      name: 'Super Integration Tester', 
-      category: 'Integration Tools', 
-      price: 49.99, 
-      image: 'tester-img' 
+    await Product.create({
+      id: 999,
+      name: 'Super Integration Tester',
+      category: 'Integration Tools',
+      price: 49.99,
+      image: 'tester-img',
     });
 
     // 2. API Interaction (Testing the Express -> Mongoose flow)
     const res = await request(app).get('/api/products?category=Integration Tools');
-    
+
     // 3. Validation
     expect(res.statusCode).toEqual(200);
     expect(res.body.products).toBeDefined();
     expect(res.body.products.length).toBe(1);
-    
+
     const fetchedProduct = res.body.products[0];
     expect(fetchedProduct.name).toBe('Super Integration Tester');
     expect(fetchedProduct.price).toBe(49.99);
@@ -55,7 +55,7 @@ describe('API + DB Integration Tests', () => {
   it('should return empty array when DB has no matching products', async () => {
     // DB is intentionally left empty for this test
     const res = await request(app).get('/api/products?category=NonExistent');
-    
+
     expect(res.statusCode).toEqual(200);
     expect(res.body.products.length).toBe(0);
     expect(res.body.total).toBe(0);

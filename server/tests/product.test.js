@@ -26,10 +26,10 @@ describe('Product Model Unit Tests', () => {
       name: 'Test Headphones',
       category: 'Electronics',
       price: 199.99,
-      image: 'test-image'
+      image: 'test-image',
     });
     const savedProduct = await validProduct.save();
-    
+
     expect(savedProduct._id).toBeDefined();
     expect(savedProduct.id).toBe(99);
     expect(savedProduct.name).toBe('Test Headphones');
@@ -46,7 +46,7 @@ describe('Product Model Unit Tests', () => {
     } catch (error) {
       err = error;
     }
-    
+
     expect(err).toBeInstanceOf(mongoose.Error.ValidationError);
     expect(err.errors.id).toBeDefined();
     expect(err.errors.category).toBeDefined();
@@ -56,12 +56,20 @@ describe('Product Model Unit Tests', () => {
 
   it('should enforce unique ID constraint', async () => {
     const product1 = new Product({
-      id: 100, name: 'P1', category: 'Cat1', price: 10, image: 'img1'
+      id: 100,
+      name: 'P1',
+      category: 'Cat1',
+      price: 10,
+      image: 'img1',
     });
     await product1.save();
 
     const product2 = new Product({
-      id: 100, name: 'P2', category: 'Cat2', price: 20, image: 'img2'
+      id: 100,
+      name: 'P2',
+      category: 'Cat2',
+      price: 20,
+      image: 'img2',
     });
 
     let err;
@@ -73,6 +81,6 @@ describe('Product Model Unit Tests', () => {
 
     expect(err).toBeDefined();
     // MongoDB duplicate key error code is 11000
-    expect(err.code).toBe(11000); 
+    expect(err.code).toBe(11000);
   });
 });
