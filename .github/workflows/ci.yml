@@ -81,7 +81,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: SSH - Clone and Pull Repo
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
@@ -101,7 +101,7 @@ jobs:
             fi
 
       - name: SSH - Build Docker Image
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
@@ -116,7 +116,7 @@ jobs:
             sudo docker build -t shopsmart-backend .
 
       - name: SSH - Run Docker Container
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
@@ -133,7 +133,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: SSH - Install Dependencies
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
@@ -146,7 +146,7 @@ jobs:
             npm ci
 
       - name: SSH - Build Frontend
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
@@ -157,7 +157,7 @@ jobs:
             npm run build
 
       - name: SSH - Serve Frontend via PM2
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
