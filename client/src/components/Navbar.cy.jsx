@@ -1,4 +1,3 @@
-import React from 'react';
 import Navbar from './Navbar';
 // Removed redundant local CSS import in favor of centralized component.css import
 
@@ -23,7 +22,9 @@ describe('<Navbar />', () => {
 
   it('triggers onCartOpen when cart button is clicked', () => {
     const onCartOpenSpy = cy.spy().as('onCartOpen');
-    cy.mount(<Navbar cartCount={0} onCartOpen={onCartOpenSpy} searchQuery="" onSearchChange={noop} />);
+    cy.mount(
+      <Navbar cartCount={0} onCartOpen={onCartOpenSpy} searchQuery="" onSearchChange={noop} />
+    );
     cy.get('#cart-toggle-btn').click();
     cy.get('@onCartOpen').should('have.been.called');
   });

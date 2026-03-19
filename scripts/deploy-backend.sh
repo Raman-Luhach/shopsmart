@@ -32,7 +32,8 @@ fi
 
 # 4. Idempotent service start/restart
 echo "Deploying backend service..."
-pm2 restart shopsmart-backend || pm2 start src/index.js --name "shopsmart-backend"
+# Pass MONGO_URI to PM2
+pm2 restart shopsmart-backend --update-env || MONGO_URI=$MONGO_URI pm2 start src/index.js --name "shopsmart-backend"
 pm2 save
 
 echo "Backend deployment completed successfully!"

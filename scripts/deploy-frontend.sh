@@ -24,6 +24,7 @@ echo "Installing frontend dependencies..."
 npm ci
 
 echo "Building frontend for production..."
+export VITE_API_URL=$VITE_API_URL
 npm run build
 
 # 3. Idempotent environment setup for Serving Static Files
