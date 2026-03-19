@@ -62,6 +62,10 @@ jobs:
         working-directory: ./server
         run: npm ci
 
+      - name: Run linter
+        working-directory: ./server
+        run: npm run lint
+
       - name: Run tests
         working-directory: ./server
         run: npm test
