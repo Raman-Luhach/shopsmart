@@ -1,5 +1,16 @@
+require('dotenv').config();
 const request = require('supertest');
+const mongoose = require('mongoose');
 const app = require('../src/app');
+const connectDB = require('../src/config/db');
+
+beforeAll(async () => {
+  await connectDB();
+});
+
+afterAll(async () => {
+  await mongoose.connection.close();
+});
 
 describe('GET /api/health', () => {
     it('should return 200 and status ok', async () => {

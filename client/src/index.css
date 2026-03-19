@@ -2,32 +2,34 @@
 :root {
   --font-sans: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
 
-  --clr-bg:          #f7f6f4;
-  --clr-surface:     #ffffff;
-  --clr-surface-2:   #f0eeeb;
-  --clr-border:      #e4e1dc;
-  --clr-text:        #1a1a1a;
-  --clr-text-2:      #6b6460;
-  --clr-text-3:      #9b948e;
+  --clr-bg:          #f0eeeb;
+  --clr-surface:     rgba(255, 255, 255, 0.85);
+  --clr-surface-2:   rgba(240, 238, 235, 0.7);
+  --clr-border:      rgba(228, 225, 220, 0.8);
+  --clr-text:        #111111;
+  --clr-text-2:      #55514f;
+  --clr-text-3:      #8b8682;
 
-  --clr-accent:      #2d2d2d;
+  --clr-accent:      #1c1c1c;
   --clr-accent-hover:#000000;
-  --clr-tag:         #f0eeeb;
+  --clr-tag:         #e8e5df;
 
   --clr-badge-hot:   #c0392b;
-  --clr-badge-new:   #1a7a4a;
-  --clr-badge-best:  #8a6d2d;
-  --clr-badge-rated: #2d5a8a;
+  --clr-badge-new:   #27ae60;
+  --clr-badge-best:  #d35400;
+  --clr-badge-rated: #2980b9;
 
-  --shadow-sm:  0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-  --shadow-md:  0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
-  --shadow-lg:  0 16px 40px rgba(0,0,0,.12);
+  --shadow-sm:  0 2px 8px rgba(0,0,0,.04);
+  --shadow-md:  0 8px 24px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.04);
+  --shadow-lg:  0 24px 48px rgba(0,0,0,.12), 0 8px 16px rgba(0,0,0,.06);
 
-  --radius-sm:  6px;
-  --radius-md:  12px;
-  --radius-lg:  20px;
+  --radius-sm:  8px;
+  --radius-md:  16px;
+  --radius-lg:  24px;
 
-  --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  
+  --glass-blur: blur(20px);
 }
 
 /* ── Reset ─────────────────────────────────────────────────────────────── */
@@ -37,7 +39,8 @@ html { scroll-behavior: smooth; }
 
 body {
   font-family: var(--font-sans);
-  background: var(--clr-bg);
+  background: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
+  background-attachment: fixed;
   color: var(--clr-text);
   line-height: 1.6;
   min-height: 100vh;
@@ -102,9 +105,11 @@ p { color: var(--clr-text-2); }
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(247, 246, 244, 0.88);
-  backdrop-filter: blur(18px);
-  border-bottom: 1px solid var(--clr-border);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
   padding: 0;
 }
 
@@ -192,8 +197,8 @@ p { color: var(--clr-text-2); }
 .hero {
   position: relative;
   overflow: hidden;
-  background: var(--clr-surface-2);
-  border-bottom: 1px solid var(--clr-border);
+  background: transparent;
+  padding-top: 40px;
 }
 
 .hero-bg {
@@ -274,28 +279,31 @@ p { color: var(--clr-text-2); }
 
 .hero-visual {
   flex-shrink: 0;
-  width: 340px;
-  height: 320px;
-  background: var(--clr-surface);
+  width: 380px;
+  height: 360px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.4));
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-lg), inset 0 0 0 1px rgba(255,255,255,0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9rem;
-  border: 1px solid var(--clr-border);
+  font-size: 10rem;
   position: relative;
   overflow: hidden;
+  transform: perspective(1000px) rotateY(-8deg) rotateX(4deg);
+  transition: transform 0.5s ease;
+}
+.hero-visual:hover {
+  transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
 }
 .hero-visual::after {
   content: '';
   position: absolute;
-  bottom: -20px;
-  right: -20px;
-  width: 120px;
-  height: 120px;
-  background: var(--clr-surface-2);
-  border-radius: 50%;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(255,255,255,0.8), transparent);
+  pointer-events: none;
 }
 
 /* ── Category Filter ─────────────────────────────────────────────────────── */
@@ -324,24 +332,30 @@ p { color: var(--clr-text-2); }
 .category-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 18px;
+  gap: 8px;
+  padding: 10px 20px;
   border-radius: 99px;
-  border: 1.5px solid var(--clr-border);
-  background: var(--clr-surface);
-  font-size: 0.88rem;
-  font-weight: 500;
+  border: 1px solid rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.4);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  font-size: 0.9rem;
+  font-weight: 600;
   color: var(--clr-text-2);
   cursor: pointer;
   transition: all var(--transition);
 }
 .category-pill:hover {
-  border-color: var(--clr-accent);
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.8);
+  box-shadow: var(--shadow-md);
   color: var(--clr-accent);
 }
 .category-pill.active {
   background: var(--clr-accent);
   border-color: var(--clr-accent);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
   color: #fff;
 }
 
@@ -370,36 +384,43 @@ p { color: var(--clr-text-2); }
 
 /* ── Product Card ────────────────────────────────────────────────────────── */
 .product-card {
-  background: var(--clr-surface);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-radius: var(--radius-md);
-  border: 1px solid var(--clr-border);
+  border: 1px solid rgba(255,255,255,0.8);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   cursor: pointer;
-  transition: transform var(--transition), box-shadow var(--transition);
+  transition: all var(--transition);
   display: flex;
   flex-direction: column;
 }
 .product-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px) scale(1.02);
   box-shadow: var(--shadow-lg);
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .product-card-image {
-  height: 200px;
-  background: var(--clr-surface-2);
+  height: 220px;
+  background: linear-gradient(135deg, rgba(240,238,235,0.5), rgba(255,255,255,0.8));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 5rem;
+  font-size: 6rem;
   position: relative;
-  border-bottom: 1px solid var(--clr-border);
   overflow: hidden;
+  transition: transform var(--transition);
+}
+.product-card:hover .product-card-image {
+  transform: scale(1.05);
 }
 .product-card-image::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, transparent 60%, rgba(0,0,0,0.03));
+  background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.02));
 }
 
 .product-badge {
