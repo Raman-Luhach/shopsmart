@@ -2,7 +2,7 @@ import heroBg from '../assets/hero_bg.png';
 
 function Hero({ onShopClick }) {
   return (
-    <section className="hero">
+    <section className="hero" id="hero">
       <img src={heroBg} alt="shopping background" className="hero-bg" />
       <div className="container hero-inner">
         <div className="hero-content">
@@ -17,7 +17,7 @@ function Hero({ onShopClick }) {
             beautifully simple store.
           </p>
           <div className="hero-actions">
-            <button id="hero-shop-btn" className="btn btn-primary" onClick={onShopClick}>
+            <button id="hero-cta" className="btn btn-primary" onClick={onShopClick}>
               Shop Now →
             </button>
             <button className="btn btn-outline">View Deals</button>

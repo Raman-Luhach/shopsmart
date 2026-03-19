@@ -37,7 +37,7 @@ function ProductCard({ product, onAddToCart }) {
           {emoji}
         </span>
         <button
-          className="add-to-cart-overlay"
+          className="add-to-cart-overlay add-to-cart-btn"
           id={`quick-add-${product.id}`}
           onClick={() => onAddToCart(product)}
           aria-label={`Quick add ${product.name} to cart`}
@@ -59,7 +59,7 @@ function ProductCard({ product, onAddToCart }) {
         <div className="product-footer">
           <div className="product-price">${product.price.toFixed(2)}</div>
           <button
-            className="add-btn-sm"
+            className="add-btn-sm add-to-cart-btn"
             id={`add-btn-${product.id}`}
             onClick={() => onAddToCart(product)}
             aria-label={`Add ${product.name} to cart`}

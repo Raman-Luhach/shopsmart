@@ -8,7 +8,7 @@ function CategoryFilter({ categories, selected, onSelect }) {
         <div className="category-pills" role="list" aria-label="Product categories">
           <button
             id="category-all"
-            className={`category-pill${selected === 'All' ? ' active' : ''}`}
+            className={`category-pill category-btn${selected === 'All' ? ' active' : ''}`}
             onClick={() => onSelect('All')}
             role="listitem"
             aria-pressed={selected === 'All'}
@@ -19,7 +19,7 @@ function CategoryFilter({ categories, selected, onSelect }) {
             <button
               key={cat.id}
               id={`category-${cat.id}`}
-              className={`category-pill${selected === cat.name ? ' active' : ''}`}
+              className={`category-pill category-btn${selected === cat.name ? ' active' : ''}`}
               onClick={() => onSelect(cat.name)}
               role="listitem"
               aria-pressed={selected === cat.name}

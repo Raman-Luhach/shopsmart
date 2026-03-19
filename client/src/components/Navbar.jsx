@@ -1,13 +1,13 @@
 function Navbar({ cartCount, onCartOpen, searchQuery, onSearchChange }) {
   return (
-    <nav className="navbar">
+    <nav className="navbar" id="navbar">
       <div className="container navbar-inner">
         <a className="navbar-logo" href="#">
           🛍 ShopSmart
           <span>· store</span>
         </a>
 
-        <div className="navbar-search">
+        <div className="navbar-search" id="navbar-search">
           <span className="search-icon">🔍</span>
           <input
             type="text"
@@ -21,7 +21,7 @@ function Navbar({ cartCount, onCartOpen, searchQuery, onSearchChange }) {
 
         <div className="navbar-actions">
           <button
-            id="cart-open-btn"
+            id="cart-toggle-btn"
             className="cart-btn"
             onClick={onCartOpen}
             aria-label="Open cart"
