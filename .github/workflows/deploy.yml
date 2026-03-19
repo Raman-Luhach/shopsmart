@@ -17,7 +17,7 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # 0. Bootstrap Git installation before trying to clone
+            # 0. Bootstrap Git installation
             if ! command -v git &> /dev/null; then
               echo "Git not found. Installing..."
               if command -v dnf &> /dev/null; then
@@ -27,7 +27,7 @@ jobs:
               fi
             fi
 
-            # 1. Idempotent initial setup if the script doesn't exist yet
+            # 1. Idempotent repo setup (clone or pull)
             mkdir -p ~/shopsmart
             cd ~/shopsmart
             if [ ! -d ".git" ]; then
@@ -37,8 +37,8 @@ jobs:
               git checkout -- .
               git pull origin main
             fi
-            
-            # Make executable and run
+
+            # 2. Make executable and run
             chmod +x scripts/deploy-backend.sh
             ./scripts/deploy-backend.sh
 
@@ -56,7 +56,7 @@ jobs:
           script: |
             cd ~/shopsmart
             git pull origin main
-            
+
             # Make executable and run
             chmod +x scripts/deploy-frontend.sh
             ./scripts/deploy-frontend.sh
