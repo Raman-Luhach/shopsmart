@@ -1,0 +1,83 @@
+﻿Project Rubrics
+GitHub Secrets
+Configured in:
+Settings → Secrets and Variables → Actions
+Required:
+* AWS_ACCESS_KEY_ID
+* AWS_SECRET_ACCESS_KEY
+* AWS_SESSION_TOKEN
+* AWS_REGION
+________________
+
+
+
+
+________________
+
+
+Pipeline Phases
+Phase 1 — Testing 
+Students should:
+* Run unit and integration tests
+* Generate test reports
+
+
+________________
+
+
+Phase 2 — Infrastructure Provisioning (Terraform)
+Students must:
+* Initialize Terraform
+* Validate configuration
+* Plan and apply infrastructure
+Required S3 configuration:
+* Unique bucket name
+* Versioning enabled
+* Encryption enabled
+* Public access blocked
+
+
+________________
+
+
+Phase 3 — Container Build and ECS Deployment
+Students must:
+* Build Docker image
+* Push image to ECR
+* Deploy service to ECS Fargate
+* Verify service is running
+Dockerfile requirements:
+* Multi-stage build
+* Non-root user
+* Healthcheck configured
+
+
+OR
+Phase 4 — Kubernetes Deployment (EKS)
+Students must:
+* Configure cluster access
+* Deploy Kubernetes manifests
+* Expose service endpoint
+* Ensure deployment stability
+Kubernetes requirements:
+* Minimum 2 replicas
+* Resource limits defined
+* Liveness and readiness probes
+* Non-default namespace
+
+
+________________
+
+
+Workflow Order
+Push / PR
+  ↓
+Run Tests
+  ↓
+Terraform Apply
+  ↓
+Docker Build & Push
+  ↓
+Deploy to ECS
+        or
+Deploy to EKS
