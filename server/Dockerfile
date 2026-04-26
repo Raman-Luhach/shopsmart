@@ -1,19 +1,25 @@
-FROM node:20-alpine
+# ===== Stage 1: Build =====
+FROM node:20-alpine AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json first to leverage Docker cache
 COPY package*.json ./
+RUN npm ci
 
-# Install production dependencies
-RUN npm ci --only=production
-
-# Copy the rest of the application code
 COPY src ./src
 
-# Expose the API port
+# ===== Stage 2: Production =====
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+# Install only production dependencies
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy source from builder
+COPY --from=builder /app/src ./src
+
 EXPOSE 5001
 
-# Start the application
-CMD ["npm", "start"]
+CMD ["node", "src/index.js"]
