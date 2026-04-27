@@ -5,3 +5,11 @@ dist
 build
 coverage
 .vercel
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/.terraform.lock.hcl
+terraform/tfplan
+*.tfvars
