@@ -47,3 +47,16 @@ resource "aws_s3_bucket_public_access_block" "app_bucket_public_access" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+
+# ============================================================
+# ECR REPOSITORY
+# ============================================================
+resource "aws_ecr_repository" "shopsmart" {
+  name                 = "shopsmart-backend"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
