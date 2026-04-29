@@ -116,3 +116,75 @@ resource "aws_cloudwatch_log_group" "ecs_logs" {
   name              = "/ecs/shopsmart-backend"
   retention_in_days = 7
 }
+
+# ============================================================
+# ECS TASK DEFINITION
+# ============================================================
+resource "aws_ecs_task_definition" "shopsmart" {
+  family                   = "shopsmart-backend"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = data.aws_iam_role.lab_role.arn
+  task_role_arn            = data.aws_iam_role.lab_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "shopsmart-backend"
+      image     = "${aws_ecr_repository.shopsmart.repository_url}:latest"
+      essential = true
+      portMappings = [
+        {
+          containerPort = 5001
+          hostPort      = 5001
+          protocol      = "tcp"
+        }
+      ]
+      environment = [
+        {
+          name  = "PORT"
+          value = "5001"
+        },
+        {
+          name  = "MONGO_URI"
+          value = var.mongo_uri
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/shopsmart-backend"
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+      healthCheck = {
+        command     = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5001/api/health || exit 1"]
+        interval    = 30
+        timeout     = 5
+        retries     = 3
+        startPeriod = 10
+      }
+    }
+  ])
+}
+
+# ============================================================
+# ECS SERVICE (Fargate)
+# ============================================================
+resource "aws_ecs_service" "shopsmart" {
+  name            = "shopsmart-backend-service"
+  cluster         = aws_ecs_cluster.shopsmart.id
+  task_definition = aws_ecs_task_definition.shopsmart.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = data.aws_subnets.default.ids
+    security_groups  = [aws_security_group.ecs_sg.id]
+    assign_public_ip = true
+  }
+
+  force_new_deployment = true
+}

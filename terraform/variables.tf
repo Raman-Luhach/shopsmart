@@ -9,3 +9,10 @@ variable "s3_bucket_name" {
   type        = string
   default     = "shopsmart-artifacts-rl-2026"
 }
+
+variable "mongo_uri" {
+  description = "MongoDB connection URI"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
