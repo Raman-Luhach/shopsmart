@@ -94,3 +94,25 @@ resource "aws_security_group" "ecs_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+# ============================================================
+# ECS CLUSTER
+# ============================================================
+resource "aws_ecs_cluster" "shopsmart" {
+  name = "shopsmart-cluster"
+}
+
+# ============================================================
+# IAM ROLE (use pre-existing LabRole from AWS Academy)
+# ============================================================
+data "aws_iam_role" "lab_role" {
+  name = "LabRole"
+}
+
+# ============================================================
+# CLOUDWATCH LOG GROUP
+# ============================================================
+resource "aws_cloudwatch_log_group" "ecs_logs" {
+  name              = "/ecs/shopsmart-backend"
+  retention_in_days = 7
+}
