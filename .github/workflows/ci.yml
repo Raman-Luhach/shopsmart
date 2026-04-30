@@ -1,61 +1,25 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [main]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [main]
 
 jobs:
-  client:
-    name: Client (React/Vite)
+  # ============================================================
+  # PHASE 1: TESTING
+  # ============================================================
+  test-server:
+    name: "Phase 1 - Server Tests"
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: client/package-lock.json
-
-      - name: Install dependencies
-        working-directory: ./client
-        run: npm ci
-
-      - name: Run linter
-        working-directory: ./client
-        run: npm run lint
-
-      - name: Run tests
-        working-directory: ./client
-        run: npm run test -- --run
-
-      - name: Build
-        working-directory: ./client
-        run: npm run build
-
-      - name: Env
-        run: printenv
-             | echo "{{ $github.sha }}"
-        
-
-  server:
-    name: Server (Node.js/Express)
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: server/package-lock.json
 
       - name: Install dependencies
@@ -66,120 +30,47 @@ jobs:
         working-directory: ./server
         run: npm run lint
 
-      - name: Run tests
+      - name: Run unit and integration tests with report
         working-directory: ./server
-        run: npm test
+        run: npx jest --ci --reporters=default --reporters=jest-junit
+        env:
+          JEST_JUNIT_OUTPUT_DIR: ./reports
+          JEST_JUNIT_OUTPUT_NAME: server-test-results.xml
 
-      - name: Build check
-        working-directory: ./server
-        run: node --check src/index.js
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-test-results
+          path: server/reports/server-test-results.xml
 
-  deploy-backend:
-    name: Deploy Backend (Docker)
+  test-client:
+    name: "Phase 1 - Client Tests"
     runs-on: ubuntu-latest
-    needs: [client, server]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - name: SSH - Clone and Pull Repo
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            mkdir -p ~/shopsmart
-            cd ~/shopsmart
-            if ! command -v git &> /dev/null; then
-              sudo dnf install -y git || (sudo apt-get update && sudo apt-get install -y git)
-            fi
-            if [ ! -d ".git" ]; then
-              git clone https://github.com/Raman-Luhach/shopsmart.git .
-            else
-              git fetch origin
-              git checkout -- .
-              git pull origin main
-            fi
+      - uses: actions/checkout@v4
 
-      - name: SSH - Build Docker Image
-        uses: appleboy/ssh-action@v1.0.3
+      - uses: actions/setup-node@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            if ! command -v docker &> /dev/null; then
-              sudo dnf install -y docker || (sudo apt-get update && sudo apt-get install -y docker.io)
-              sudo systemctl enable docker || true
-              sudo systemctl start docker || true
-            fi
-            cd ~/shopsmart/server
-            sudo docker build -t shopsmart-backend .
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: client/package-lock.json
 
-      - name: SSH - Run Docker Container
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Install dependencies
+        working-directory: ./client
+        run: npm ci
+
+      - name: Run linter
+        working-directory: ./client
+        run: npm run lint
+
+      - name: Run unit tests with report
+        working-directory: ./client
+        run: npx vitest run --reporter=default --reporter=junit --outputFile=reports/client-test-results.xml
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            # 1. Clean up legacy PM2 process if it exists
-            if command -v pm2 &> /dev/null; then
-              pm2 stop shopsmart-backend || true
-              pm2 delete shopsmart-backend || true
-              pm2 save || true
-            fi
-            
-            # 2. Force kill anything still clinging to port 5001
-            sudo fuser -k 5001/tcp || true
-
-            # 3. Handle Docker
-            sudo docker stop shopsmart-backend || true
-            sudo docker rm shopsmart-backend || true
-            sudo docker run -d -p 5001:5001 --name shopsmart-backend -e MONGO_URI="${{ secrets.MONGO_URI }}" shopsmart-backend
-
-  deploy-frontend:
-    name: Deploy Frontend
-    runs-on: ubuntu-latest
-    needs: deploy-backend
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - name: SSH - Install Dependencies
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            if ! command -v npm &> /dev/null; then
-              sudo dnf install -y nodejs || (sudo apt-get update && sudo apt-get install -y nodejs npm)
-            fi
-            cd ~/shopsmart/client
-            npm ci
-
-      - name: SSH - Build Frontend
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd ~/shopsmart/client
-            export VITE_API_URL="${{ secrets.VITE_API_URL }}"
-            npm run build
-
-      - name: SSH - Serve Frontend via PM2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            if ! command -v serve &> /dev/null; then
-              sudo npm install -g serve
-            fi
-            if ! command -v pm2 &> /dev/null; then
-              sudo npm install -g pm2
-            fi
-            cd ~/shopsmart/client
-            pm2 restart shopsmart-frontend || pm2 start serve --name "shopsmart-frontend" -- -s dist -l 5173
-            pm2 save
+          name: client-test-results
+          path: client/reports/client-test-results.xml
