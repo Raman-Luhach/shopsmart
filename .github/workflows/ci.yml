@@ -128,3 +128,37 @@ jobs:
         working-directory: ./terraform
         run: |
           echo "ecr_url=$(terraform output -raw ecr_repository_url)" >> $GITHUB_OUTPUT
+
+  # ============================================================
+  # PHASE 3a: CONTAINER BUILD & PUSH TO ECR
+  # ============================================================
+  build-and-push:
+    name: "Phase 3 - Docker Build & Push to ECR"
+    runs-on: ubuntu-latest
+    needs: [terraform]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        working-directory: ./server
+        run: |
+          docker build -t ${{ needs.terraform.outputs.ecr_url }}:latest \
+                       -t ${{ needs.terraform.outputs.ecr_url }}:${{ github.sha }} .
+
+      - name: Push Docker image to ECR
+        run: |
+          docker push ${{ needs.terraform.outputs.ecr_url }}:latest
+          docker push ${{ needs.terraform.outputs.ecr_url }}:${{ github.sha }}
