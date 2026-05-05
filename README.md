@@ -6,3 +6,4 @@
 1. Deploy it on Render for backend and vercel for frontend
 1. Resolve CORS issue if needed after deployment
 # shopsmart
+ 
