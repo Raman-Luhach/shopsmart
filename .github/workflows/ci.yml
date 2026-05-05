@@ -8,9 +8,8 @@ on:
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
-  ECR_REPOSITORY: shopsmart-backend
   ECS_CLUSTER: shopsmart-cluster
-  ECS_SERVICE: shopsmart-backend-service
+  ECS_SERVICE: shopsmart-service
 
 jobs:
   # ============================================================
@@ -106,29 +105,34 @@ jobs:
           echo "Cleaning up existing resources..."
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
-          # Delete ECS service first
+          # Delete ECS service (both old and new names)
+          aws ecs update-service --cluster shopsmart-cluster --service shopsmart-service --desired-count 0 2>/dev/null || true
+          aws ecs delete-service --cluster shopsmart-cluster --service shopsmart-service --force 2>/dev/null || true
           aws ecs update-service --cluster shopsmart-cluster --service shopsmart-backend-service --desired-count 0 2>/dev/null || true
           aws ecs delete-service --cluster shopsmart-cluster --service shopsmart-backend-service --force 2>/dev/null || true
 
-          # Wait for service to fully drain (instead of blind sleep)
-          echo "Waiting for ECS service to finish draining..."
+          # Wait for services to fully drain
+          echo "Waiting for ECS services to finish draining..."
+          aws ecs wait services-inactive --cluster shopsmart-cluster --services shopsmart-service 2>/dev/null || true
           aws ecs wait services-inactive --cluster shopsmart-cluster --services shopsmart-backend-service 2>/dev/null || true
 
           # Deregister task definitions
-          for ARN in $(aws ecs list-task-definitions --family-prefix shopsmart-backend --query 'taskDefinitionArns[]' --output text 2>/dev/null); do
+          for ARN in $(aws ecs list-task-definitions --family-prefix shopsmart --query 'taskDefinitionArns[]' --output text 2>/dev/null); do
             aws ecs deregister-task-definition --task-definition "$ARN" 2>/dev/null || true
           done
 
           # Delete ECS cluster
           aws ecs delete-cluster --cluster shopsmart-cluster 2>/dev/null || true
 
-          # Delete CloudWatch log group
+          # Delete CloudWatch log groups
+          aws logs delete-log-group --log-group-name /ecs/shopsmart 2>/dev/null || true
           aws logs delete-log-group --log-group-name /ecs/shopsmart-backend 2>/dev/null || true
 
-          # Delete ECR repository (force deletes all images)
+          # Delete ECR repositories (force deletes all images)
           aws ecr delete-repository --repository-name shopsmart-backend --force 2>/dev/null || true
+          aws ecr delete-repository --repository-name shopsmart-frontend --force 2>/dev/null || true
 
-          # Delete S3 bucket (both old and new naming patterns)
+          # Delete S3 buckets (both old and new naming patterns)
           aws s3 rb "s3://shopsmart-artifacts-${ACCOUNT_ID}" --force 2>/dev/null || true
           aws s3 rb s3://shopsmart-artifacts-rl-2026 --force 2>/dev/null || true
 
@@ -174,22 +178,29 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Get ECR repository URL
+      - name: Get ECR repository URLs
         id: ecr-url
         run: |
-          ECR_URL=$(aws ecr describe-repositories --repository-names shopsmart-backend --query 'repositories[0].repositoryUri' --output text)
-          echo "url=$ECR_URL" >> $GITHUB_OUTPUT
+          BACKEND_URL=$(aws ecr describe-repositories --repository-names shopsmart-backend --query 'repositories[0].repositoryUri' --output text)
+          FRONTEND_URL=$(aws ecr describe-repositories --repository-names shopsmart-frontend --query 'repositories[0].repositoryUri' --output text)
+          echo "backend=$BACKEND_URL" >> $GITHUB_OUTPUT
+          echo "frontend=$FRONTEND_URL" >> $GITHUB_OUTPUT
 
-      - name: Build Docker image
+      - name: Build and push backend image
         working-directory: ./server
         run: |
-          docker build -t ${{ steps.ecr-url.outputs.url }}:latest \
-                       -t ${{ steps.ecr-url.outputs.url }}:${{ github.sha }} .
+          docker build -t ${{ steps.ecr-url.outputs.backend }}:latest \
+                       -t ${{ steps.ecr-url.outputs.backend }}:${{ github.sha }} .
+          docker push ${{ steps.ecr-url.outputs.backend }}:latest
+          docker push ${{ steps.ecr-url.outputs.backend }}:${{ github.sha }}
 
-      - name: Push Docker image to ECR
+      - name: Build and push frontend image
+        working-directory: ./client
         run: |
-          docker push ${{ steps.ecr-url.outputs.url }}:latest
-          docker push ${{ steps.ecr-url.outputs.url }}:${{ github.sha }}
+          docker build -t ${{ steps.ecr-url.outputs.frontend }}:latest \
+                       -t ${{ steps.ecr-url.outputs.frontend }}:${{ github.sha }} .
+          docker push ${{ steps.ecr-url.outputs.frontend }}:latest
+          docker push ${{ steps.ecr-url.outputs.frontend }}:${{ github.sha }}
 
   # ============================================================
   # PHASE 3b: DEPLOY TO ECS FARGATE

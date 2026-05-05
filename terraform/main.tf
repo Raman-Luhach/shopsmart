@@ -52,10 +52,20 @@ resource "aws_s3_bucket_public_access_block" "app_bucket_public_access" {
 }
 
 # ============================================================
-# ECR REPOSITORY
+# ECR REPOSITORIES
 # ============================================================
-resource "aws_ecr_repository" "shopsmart" {
+resource "aws_ecr_repository" "backend" {
   name                 = "shopsmart-backend"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+
+resource "aws_ecr_repository" "frontend" {
+  name                 = "shopsmart-frontend"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 
@@ -82,6 +92,13 @@ resource "aws_security_group" "ecs_sg" {
   name_prefix = "shopsmart-ecs-"
   description = "Allow inbound traffic to ECS tasks"
   vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   ingress {
     from_port   = 5001
@@ -120,26 +137,26 @@ data "aws_iam_role" "lab_role" {
 # CLOUDWATCH LOG GROUP
 # ============================================================
 resource "aws_cloudwatch_log_group" "ecs_logs" {
-  name              = "/ecs/shopsmart-backend"
+  name              = "/ecs/shopsmart"
   retention_in_days = 7
 }
 
 # ============================================================
-# ECS TASK DEFINITION
+# ECS TASK DEFINITION (both frontend and backend containers)
 # ============================================================
 resource "aws_ecs_task_definition" "shopsmart" {
-  family                   = "shopsmart-backend"
+  family                   = "shopsmart"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = "512"
+  memory                   = "1024"
   execution_role_arn       = data.aws_iam_role.lab_role.arn
   task_role_arn            = data.aws_iam_role.lab_role.arn
 
   container_definitions = jsonencode([
     {
       name      = "shopsmart-backend"
-      image     = "${aws_ecr_repository.shopsmart.repository_url}:latest"
+      image     = "${aws_ecr_repository.backend.repository_url}:latest"
       essential = true
       portMappings = [
         {
@@ -161,9 +178,9 @@ resource "aws_ecs_task_definition" "shopsmart" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = "/ecs/shopsmart-backend"
+          "awslogs-group"         = "/ecs/shopsmart"
           "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "ecs"
+          "awslogs-stream-prefix" = "backend"
         }
       }
       healthCheck = {
@@ -173,6 +190,33 @@ resource "aws_ecs_task_definition" "shopsmart" {
         retries     = 3
         startPeriod = 10
       }
+    },
+    {
+      name      = "shopsmart-frontend"
+      image     = "${aws_ecr_repository.frontend.repository_url}:latest"
+      essential = true
+      portMappings = [
+        {
+          containerPort = 80
+          hostPort      = 80
+          protocol      = "tcp"
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/shopsmart"
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "frontend"
+        }
+      }
+      healthCheck = {
+        command     = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1"]
+        interval    = 30
+        timeout     = 5
+        retries     = 3
+        startPeriod = 5
+      }
     }
   ])
 }
@@ -181,7 +225,7 @@ resource "aws_ecs_task_definition" "shopsmart" {
 # ECS SERVICE (Fargate)
 # ============================================================
 resource "aws_ecs_service" "shopsmart" {
-  name            = "shopsmart-backend-service"
+  name            = "shopsmart-service"
   cluster         = aws_ecs_cluster.shopsmart.id
   task_definition = aws_ecs_task_definition.shopsmart.arn
   desired_count   = 1
