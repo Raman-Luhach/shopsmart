@@ -111,6 +111,34 @@ jobs:
         working-directory: ./terraform
         run: terraform validate
 
+      - name: Import existing resources
+        working-directory: ./terraform
+        continue-on-error: true
+        env:
+          TF_VAR_mongo_uri: ${{ secrets.MONGO_URI }}
+        run: |
+          # Import resources that already exist in AWS but not in Terraform state
+          terraform import aws_s3_bucket.app_bucket shopsmart-artifacts-rl-2026 || true
+          terraform import aws_s3_bucket_versioning.app_bucket_versioning shopsmart-artifacts-rl-2026 || true
+          terraform import aws_s3_bucket_server_side_encryption_configuration.app_bucket_encryption shopsmart-artifacts-rl-2026 || true
+          terraform import aws_s3_bucket_public_access_block.app_bucket_public_access shopsmart-artifacts-rl-2026 || true
+          terraform import aws_ecr_repository.shopsmart shopsmart-backend || true
+          terraform import aws_ecs_cluster.shopsmart shopsmart-cluster || true
+          terraform import aws_cloudwatch_log_group.ecs_logs /ecs/shopsmart-backend || true
+
+          # Security group needs ID lookup
+          SG_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=shopsmart-ecs-sg --query 'SecurityGroups[0].GroupId' --output text 2>/dev/null || echo "")
+          if [ -n "$SG_ID" ] && [ "$SG_ID" != "None" ]; then
+            terraform import aws_security_group.ecs_sg "$SG_ID" || true
+          fi
+
+          # ECS task definition and service (may not exist yet)
+          TASK_ARN=$(aws ecs describe-task-definition --task-definition shopsmart-backend --query 'taskDefinition.taskDefinitionArn' --output text 2>/dev/null || echo "")
+          if [ -n "$TASK_ARN" ] && [ "$TASK_ARN" != "None" ]; then
+            terraform import aws_ecs_task_definition.shopsmart "$TASK_ARN" || true
+          fi
+          terraform import aws_ecs_service.shopsmart shopsmart-cluster/shopsmart-backend-service || true
+
       - name: Terraform Plan
         working-directory: ./terraform
         run: terraform plan -var="mongo_uri=${{ secrets.MONGO_URI }}" -out=tfplan
