@@ -75,15 +75,8 @@ resource "aws_ecr_repository" "frontend" {
 }
 
 # ============================================================
-# NETWORKING (default VPC + subnets for Learner Lab)
+# NETWORKING (subnets passed via variable, no EC2 describe needed)
 # ============================================================
-data "aws_subnets" "default" {
-  filter {
-    name   = "default-for-az"
-    values = ["true"]
-  }
-}
-
 resource "aws_security_group" "ecs_sg" {
   name_prefix = "shopsmart-ecs-"
   description = "Allow inbound traffic to ECS tasks"
@@ -227,7 +220,7 @@ resource "aws_ecs_service" "shopsmart" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = data.aws_subnets.default.ids
+    subnets          = var.subnet_ids
     security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
   }

@@ -136,6 +136,12 @@ jobs:
           aws s3 rb "s3://shopsmart-artifacts-${ACCOUNT_ID}" --force 2>/dev/null || true
           aws s3 rb s3://shopsmart-artifacts-rl-2026 --force 2>/dev/null || true
 
+      - name: Discover subnet IDs
+        id: network
+        run: |
+          SUBNETS=$(aws ec2 describe-subnets --filters "Name=default-for-az,Values=true" --query 'Subnets[*].SubnetId' --output json)
+          echo "subnets=$SUBNETS" >> $GITHUB_OUTPUT
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
@@ -149,7 +155,11 @@ jobs:
 
       - name: Terraform Plan
         working-directory: ./terraform
-        run: terraform plan -var="mongo_uri=${{ secrets.MONGO_URI }}" -out=tfplan
+        run: |
+          terraform plan \
+            -var="mongo_uri=${{ secrets.MONGO_URI }}" \
+            -var='subnet_ids=${{ steps.network.outputs.subnets }}' \
+            -out=tfplan
 
       - name: Terraform Apply
         working-directory: ./terraform
