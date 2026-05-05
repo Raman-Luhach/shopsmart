@@ -12,11 +12,14 @@ provider "aws" {
   region = var.aws_region
 }
 
+# Get current AWS account ID for unique naming
+data "aws_caller_identity" "current" {}
+
 # ============================================================
 # S3 BUCKET (Rubric: unique name, versioning, encryption, no public access)
 # ============================================================
 resource "aws_s3_bucket" "app_bucket" {
-  bucket = var.s3_bucket_name
+  bucket = "shopsmart-artifacts-${data.aws_caller_identity.current.account_id}"
 
   tags = {
     Name    = "shopsmart-bucket"
@@ -76,7 +79,7 @@ data "aws_subnets" "default" {
 }
 
 resource "aws_security_group" "ecs_sg" {
-  name        = "shopsmart-ecs-sg"
+  name_prefix = "shopsmart-ecs-"
   description = "Allow inbound traffic to ECS tasks"
   vpc_id      = data.aws_vpc.default.id
 
@@ -92,6 +95,10 @@ resource "aws_security_group" "ecs_sg" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
