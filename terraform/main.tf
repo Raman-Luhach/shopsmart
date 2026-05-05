@@ -6,12 +6,6 @@ terraform {
       version = "~> 5.0"
     }
   }
-
-  backend "s3" {
-    bucket = "shopsmart-artifacts-rl-2026"
-    key    = "terraform/terraform.tfstate"
-    region = "us-east-1"
-  }
 }
 
 provider "aws" {
