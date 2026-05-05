@@ -89,8 +89,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-server, test-client]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    outputs:
-      ecr_url: ${{ steps.tf-output.outputs.ecr_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -104,8 +102,6 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
 
       - name: Terraform Init
         working-directory: ./terraform
@@ -122,12 +118,6 @@ jobs:
       - name: Terraform Apply
         working-directory: ./terraform
         run: terraform apply -auto-approve tfplan
-
-      - name: Get Terraform outputs
-        id: tf-output
-        working-directory: ./terraform
-        run: |
-          echo "ecr_url=$(terraform output -raw ecr_repository_url)" >> $GITHUB_OUTPUT
 
   # ============================================================
   # PHASE 3a: CONTAINER BUILD & PUSH TO ECR
@@ -152,16 +142,22 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Get ECR repository URL
+        id: ecr-url
+        run: |
+          ECR_URL=$(aws ecr describe-repositories --repository-names shopsmart-backend --query 'repositories[0].repositoryUri' --output text)
+          echo "url=$ECR_URL" >> $GITHUB_OUTPUT
+
       - name: Build Docker image
         working-directory: ./server
         run: |
-          docker build -t ${{ needs.terraform.outputs.ecr_url }}:latest \
-                       -t ${{ needs.terraform.outputs.ecr_url }}:${{ github.sha }} .
+          docker build -t ${{ steps.ecr-url.outputs.url }}:latest \
+                       -t ${{ steps.ecr-url.outputs.url }}:${{ github.sha }} .
 
       - name: Push Docker image to ECR
         run: |
-          docker push ${{ needs.terraform.outputs.ecr_url }}:latest
-          docker push ${{ needs.terraform.outputs.ecr_url }}:${{ github.sha }}
+          docker push ${{ steps.ecr-url.outputs.url }}:latest
+          docker push ${{ steps.ecr-url.outputs.url }}:${{ github.sha }}
 
   # ============================================================
   # PHASE 3b: DEPLOY TO ECS FARGATE
