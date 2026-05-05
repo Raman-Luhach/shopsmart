@@ -110,13 +110,14 @@ jobs:
           aws ecs update-service --cluster shopsmart-cluster --service shopsmart-backend-service --desired-count 0 2>/dev/null || true
           aws ecs delete-service --cluster shopsmart-cluster --service shopsmart-backend-service --force 2>/dev/null || true
 
+          # Wait for service to fully drain (instead of blind sleep)
+          echo "Waiting for ECS service to finish draining..."
+          aws ecs wait services-inactive --cluster shopsmart-cluster --services shopsmart-backend-service 2>/dev/null || true
+
           # Deregister task definitions
           for ARN in $(aws ecs list-task-definitions --family-prefix shopsmart-backend --query 'taskDefinitionArns[]' --output text 2>/dev/null); do
             aws ecs deregister-task-definition --task-definition "$ARN" 2>/dev/null || true
           done
-
-          # Wait for Fargate tasks to stop
-          sleep 30
 
           # Delete ECS cluster
           aws ecs delete-cluster --cluster shopsmart-cluster 2>/dev/null || true
