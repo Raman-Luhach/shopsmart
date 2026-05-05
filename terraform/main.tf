@@ -129,8 +129,8 @@ resource "aws_ecs_cluster" "shopsmart" {
 # ============================================================
 # IAM ROLE (use pre-existing LabRole from AWS Academy)
 # ============================================================
-data "aws_iam_role" "lab_role" {
-  name = "LabRole"
+locals {
+  lab_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/LabRole"
 }
 
 # ============================================================
@@ -150,8 +150,8 @@ resource "aws_ecs_task_definition" "shopsmart" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = "512"
   memory                   = "1024"
-  execution_role_arn       = data.aws_iam_role.lab_role.arn
-  task_role_arn            = data.aws_iam_role.lab_role.arn
+  execution_role_arn       = local.lab_role_arn
+  task_role_arn            = local.lab_role_arn
 
   container_definitions = jsonencode([
     {
