@@ -99,40 +99,55 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Clean up existing AWS resources
+      - name: Create Terraform state bucket
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          STATE_BUCKET="shopsmart-tfstate-${ACCOUNT_ID}"
+          echo "STATE_BUCKET=$STATE_BUCKET" >> $GITHUB_ENV
+
+          # Create state bucket if it doesn't exist
+          if ! aws s3api head-bucket --bucket "$STATE_BUCKET" 2>/dev/null; then
+            echo "Creating state bucket: $STATE_BUCKET"
+            aws s3api create-bucket --bucket "$STATE_BUCKET" --region us-east-1
+            aws s3api put-bucket-versioning --bucket "$STATE_BUCKET" \
+              --versioning-configuration Status=Enabled
+            aws s3api put-bucket-encryption --bucket "$STATE_BUCKET" \
+              --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+          else
+            echo "State bucket already exists: $STATE_BUCKET"
+          fi
+
+      - name: Clean up orphaned resources (first run only)
         continue-on-error: true
         run: |
-          echo "Cleaning up existing resources..."
+          # Skip cleanup if Terraform state already exists
+          if aws s3 ls "s3://${STATE_BUCKET}/shopsmart/terraform.tfstate" 2>/dev/null; then
+            echo "Terraform state found, skipping cleanup."
+            exit 0
+          fi
+
+          echo "No state found, cleaning up orphaned resources from previous runs..."
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
-          # Delete ECS service (both old and new names)
+          # Delete ECS service
           aws ecs update-service --cluster shopsmart-cluster --service shopsmart-service --desired-count 0 2>/dev/null || true
           aws ecs delete-service --cluster shopsmart-cluster --service shopsmart-service --force 2>/dev/null || true
           aws ecs update-service --cluster shopsmart-cluster --service shopsmart-backend-service --desired-count 0 2>/dev/null || true
           aws ecs delete-service --cluster shopsmart-cluster --service shopsmart-backend-service --force 2>/dev/null || true
 
-          # Wait for services to fully drain
           echo "Waiting for ECS services to finish draining..."
           aws ecs wait services-inactive --cluster shopsmart-cluster --services shopsmart-service 2>/dev/null || true
           aws ecs wait services-inactive --cluster shopsmart-cluster --services shopsmart-backend-service 2>/dev/null || true
 
-          # Deregister task definitions
           for ARN in $(aws ecs list-task-definitions --family-prefix shopsmart --query 'taskDefinitionArns[]' --output text 2>/dev/null); do
             aws ecs deregister-task-definition --task-definition "$ARN" 2>/dev/null || true
           done
 
-          # Delete ECS cluster
           aws ecs delete-cluster --cluster shopsmart-cluster 2>/dev/null || true
-
-          # Delete CloudWatch log groups
           aws logs delete-log-group --log-group-name /ecs/shopsmart 2>/dev/null || true
           aws logs delete-log-group --log-group-name /ecs/shopsmart-backend 2>/dev/null || true
-
-          # Delete ECR repositories (force deletes all images)
           aws ecr delete-repository --repository-name shopsmart-backend --force 2>/dev/null || true
           aws ecr delete-repository --repository-name shopsmart-frontend --force 2>/dev/null || true
-
-          # Delete S3 buckets (both old and new naming patterns)
           aws s3 rb "s3://shopsmart-artifacts-${ACCOUNT_ID}" --force 2>/dev/null || true
           aws s3 rb s3://shopsmart-artifacts-rl-2026 --force 2>/dev/null || true
 
@@ -147,7 +162,7 @@ jobs:
 
       - name: Terraform Init
         working-directory: ./terraform
-        run: terraform init
+        run: terraform init -backend-config="bucket=${STATE_BUCKET}"
 
       - name: Terraform Validate
         working-directory: ./terraform

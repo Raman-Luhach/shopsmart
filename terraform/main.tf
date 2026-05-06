@@ -6,6 +6,12 @@ terraform {
       version = "~> 5.0"
     }
   }
+
+  # State stored in S3 (bucket name passed via -backend-config during init)
+  backend "s3" {
+    key    = "shopsmart/terraform.tfstate"
+    region = "us-east-1"
+  }
 }
 
 provider "aws" {
