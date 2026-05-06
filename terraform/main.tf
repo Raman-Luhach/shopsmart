@@ -128,6 +128,20 @@ locals {
 }
 
 # ============================================================
+# SSM PARAMETER STORE (secure storage for MongoDB URI)
+# ============================================================
+resource "aws_ssm_parameter" "mongo_uri" {
+  name        = "/shopsmart/mongo-uri"
+  description = "MongoDB connection URI for ShopSmart backend"
+  type        = "SecureString"
+  value       = var.mongo_uri
+
+  tags = {
+    Project = "shopsmart"
+  }
+}
+
+# ============================================================
 # CLOUDWATCH LOG GROUP
 # ============================================================
 resource "aws_cloudwatch_log_group" "ecs_logs" {
@@ -163,10 +177,12 @@ resource "aws_ecs_task_definition" "shopsmart" {
         {
           name  = "PORT"
           value = "5001"
-        },
+        }
+      ]
+      secrets = [
         {
-          name  = "MONGO_URI"
-          value = var.mongo_uri
+          name      = "MONGO_URI"
+          valueFrom = aws_ssm_parameter.mongo_uri.arn
         }
       ]
       logConfiguration = {
