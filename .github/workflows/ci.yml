@@ -139,7 +139,7 @@ jobs:
       - name: Discover subnet IDs
         id: network
         run: |
-          SUBNETS=$(aws ec2 describe-subnets --filters "Name=default-for-az,Values=true" --query 'Subnets[*].SubnetId' --output json)
+          SUBNETS=$(aws ec2 describe-subnets --filters "Name=default-for-az,Values=true" --query 'Subnets[*].SubnetId' --output json | jq -c '.')
           echo "subnets=$SUBNETS" >> $GITHUB_OUTPUT
 
       - name: Setup Terraform
