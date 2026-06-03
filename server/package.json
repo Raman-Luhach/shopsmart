@@ -10,7 +10,7 @@
     "lint": "eslint src/ tests/ && prettier --check src/ tests/"
   },
   "dependencies": {
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.19.2",
     "mongoose": "^9.3.1"
